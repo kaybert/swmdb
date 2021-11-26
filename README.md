@@ -1,6 +1,6 @@
 # StarWars Movie Database react project
 
-My contribution to an interview assignment built in react and the [MUI](https://mui.com/>) library.
+My contribution to an interview assignment built in react and the [MUI](https://mui.com) library.
 
 This project was initialized with creact-react-app.
 
