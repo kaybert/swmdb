@@ -1,7 +1,9 @@
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
+  Chip,
   InputAdornment,
+  Rating,
   Table,
   TableBody,
   TableCell,
@@ -41,13 +43,39 @@ const App = () => {
         }) => ({
           id,
           episode: `EPISODE ${episode_id}`,
-          title,
+          title: title.replace("1", "I"),
           year: release_date,
           openingCrawl: opening_crawl,
           producer,
         })
       );
       setMovies(starWarsMovies);
+
+      const url = "https://www.omdbapi.com/";
+
+      (async () => {
+        let moviesWithMeta = await Promise.all(
+          starWarsMovies?.map(async (movie) => {
+            const link = `${url}?t=${movie.title}&apikey=2a1ad4b`;
+            let response = await fetch(link);
+            let { Ratings, Poster } = await response.json();
+            const ratings = Ratings.map(({ Source, Value }) => ({
+              source: Source,
+              value: Value.replace(/(\.|%|\/\d+)/g, ""),
+            }));
+
+            return {
+              ...movie,
+              ratings: Ratings.map(({ Source, Value }) => ({
+                source: Source,
+                value: Value.replace(/(\.|%|\/\d+)/g, ""),
+              })),
+              posterUrl: Poster,
+            };
+          })
+        );
+        setMovies(moviesWithMeta);
+      })();
     })();
   }, []);
 
@@ -64,6 +92,15 @@ const App = () => {
     filteredMovies.some((movie) => movie.id === selected?.id) ||
       setSelected(null);
   }, [filteredMovies, selected?.id]);
+
+  const calcAverage = (ratings) => {
+    let sum = 0;
+    for (const rating of ratings) {
+      sum += +rating.value;
+    }
+    console.log(Math.floor(sum / ratings.length / 10));
+    return Math.floor(sum / ratings.length / 10);
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -94,7 +131,11 @@ const App = () => {
       </Toolbar>
       <Box sx={{ display: "flex", alignItems: "stretch", flexGrow: "1" }}>
         <Box
-          sx={{ flexBasis: "50%", borderRight: 1, borderColor: "lightgray" }}
+          sx={{
+            flexBasis: "50%",
+            borderRight: 1,
+            borderColor: "lightgray",
+          }}
         >
           <Table>
             <TableBody sx={{ cursor: "pointer" }}>
@@ -102,7 +143,10 @@ const App = () => {
                 <TableRow
                   key={movie.id}
                   hover
-                  onClick={() => setSelected(movie)}
+                  onClick={() => {
+                    console.log(selected);
+                    setSelected(movie);
+                  }}
                   selected={selected?.id === movie.id}
                 >
                   <TableCell>{movie.episode}</TableCell>
@@ -113,16 +157,63 @@ const App = () => {
             </TableBody>
           </Table>
         </Box>
-        <Box sx={{ position: "relative", flexBasis: "50%", padding: 3 }}>
+        <Box
+          sx={{
+            position: "relative",
+            flexBasis: "50%",
+            padding: 3,
+            flexWrap: "wrap",
+          }}
+        >
           {selected ? (
             <>
               <Typography variant="h5" container="h2" gutterBottom>
                 {selected.title}
               </Typography>
-              <Typography paragraph gutterBottom>
-                {selected.openingCrawl}
-              </Typography>
-              <Typography variant="body2">{`Directed by: ${selected.producer}`}</Typography>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  marginBottom: "10px",
+                }}
+              >
+                <div>
+                  <img style={{ width: "150px" }} src={selected.posterUrl} />
+                </div>
+                <Typography paragraph gutterBottom>
+                  {selected.openingCrawl}
+                </Typography>
+              </div>
+              <Typography>{`Directed by: ${selected.producer}`}</Typography>
+
+              <div
+                style={{
+                  marginTop: "10px",
+                  textAlign: "center",
+                  display: "flex",
+                }}
+              >
+                <Typography>Average rating:</Typography>
+                <Rating
+                  sx={{ marginRight: "5px", marginLeft: "10px" }}
+                  name="Average rating"
+                  value={calcAverage(selected.ratings)}
+                  precision={0.5}
+                  max={10}
+                  readOnly
+                />
+              </div>
+              <div>
+                {selected.ratings.map((rating) => (
+                  <Chip
+                    sx={{ margin: "10px", marginLeft: "0" }}
+                    label={`${rating.source}: ${rating.value}%`}
+                    variant="outlined"
+                    color="info"
+                    size="small"
+                  />
+                ))}
+              </div>
             </>
           ) : (
             <Typography
