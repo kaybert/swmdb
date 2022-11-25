@@ -24,9 +24,11 @@ const App = () => {
   const sortBy = useCallback(
     (key) => {
       const sortedMovies = [...movies].sort((first, second) =>
-        first[key].localeCompare(second[key])
+        ("" + first[key]).localeCompare("" + second[key])
       );
-      setMovies(sortedMovies);
+      setMovies(
+        key === "averageRating" ? sortedMovies.reverse() : sortedMovies
+      );
     },
     [movies]
   );
@@ -66,10 +68,8 @@ const App = () => {
 
             return {
               ...movie,
-              ratings: Ratings.map(({ Source, Value }) => ({
-                source: Source,
-                value: Value.replace(/(\.|%|\/\d+)/g, ""),
-              })),
+              ratings: ratings,
+              averageRating: calcAverage(ratings),
               posterUrl: Poster,
             };
           })
@@ -151,6 +151,17 @@ const App = () => {
                 >
                   <TableCell>{movie.episode}</TableCell>
                   <TableCell>{movie.title}</TableCell>
+                  <TableCell align="right">
+                    <Rating
+                      name="Average rating"
+                      value={Number(movie.averageRating)}
+                      precision={0.5}
+                      max={10}
+                      size="small"
+                      readOnly
+                    />
+                  </TableCell>
+
                   <TableCell align="right">{movie.year}</TableCell>
                 </TableRow>
               ))}
@@ -197,7 +208,7 @@ const App = () => {
                 <Rating
                   sx={{ marginRight: "5px", marginLeft: "10px" }}
                   name="Average rating"
-                  value={calcAverage(selected.ratings)}
+                  value={Number(selected.averageRating)}
                   precision={0.5}
                   max={10}
                   readOnly
